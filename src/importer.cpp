@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <array>
 #include <chrono>
+#include <cctype>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -49,6 +50,33 @@ struct ProcessedFile {
 };
 
 void setup_stream_exceptions(std::ofstream& stream) { stream.exceptions(std::ios::failbit | std::ios::badbit); }
+
+std::string safe_dictionary_title(std::string_view title, const std::string& zip_path) {
+  std::string out(title);
+  for (char& ch : out) {
+    unsigned char c = static_cast<unsigned char>(ch);
+    if (c < 0x20 || ch == '/' || ch == '\\' || ch == ':') {
+      ch = '_';
+    }
+  }
+  auto is_space_or_dot = [](unsigned char c) { return std::isspace(c) || c == '.'; };
+  while (!out.empty() && is_space_or_dot(static_cast<unsigned char>(out.front()))) out.erase(out.begin());
+  while (!out.empty() && is_space_or_dot(static_cast<unsigned char>(out.back()))) out.pop_back();
+  if (!out.empty()) {
+    return out;
+  }
+  std::filesystem::path zip(zip_path);
+  out = zip.stem().string();
+  for (char& ch : out) {
+    unsigned char c = static_cast<unsigned char>(ch);
+    if (c < 0x20 || ch == '/' || ch == '\\' || ch == ':') {
+      ch = '_';
+    }
+  }
+  while (!out.empty() && is_space_or_dot(static_cast<unsigned char>(out.front()))) out.erase(out.begin());
+  while (!out.empty() && is_space_or_dot(static_cast<unsigned char>(out.back()))) out.pop_back();
+  return out.empty() ? "Imported Dictionary" : out;
+}
 
 Files get_files(const Zip& zip) {
   Files files;
@@ -691,7 +719,7 @@ ImportResult dictionary_importer::import(const std::string& zip_path, const std:
       throw std::runtime_error("failed to parse index.json");
     }
 
-    result.title = index.title;
+    result.title = safe_dictionary_title(index.title, zip_path);
 
     dict_path = native_output_dir / path_utils::from_utf8(result.title);
     std::filesystem::create_directories(dict_path);
