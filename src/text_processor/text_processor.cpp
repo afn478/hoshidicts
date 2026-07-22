@@ -207,9 +207,8 @@ std::u32string alphanumeric_to_fullwidth(const std::u32string& text) {
   return result;
 }
 
-constexpr auto mapping_list = std::to_array<unsigned char>({
-#embed "../../external/kanji-processor/src/full_list.json"
-});
+#include "kanji_full_list.h"
+constexpr auto& mapping_list = kanji_full_list;
 
 std::u32string standardize_kanji(const std::u32string& text) {
   static const auto map = [] {
