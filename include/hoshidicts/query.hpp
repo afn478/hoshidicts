@@ -97,6 +97,9 @@ class DictionaryQuery {
   void add_pitch_dict(const std::string& path);
   void add_kanji_dict(const std::string& path);
 
+  size_t remove_dict(const std::string& path);
+  bool set_dict_order(const std::vector<std::string>& paths);
+
   void query_freq(std::vector<TermResult>& terms) const;
   void query_pitch(std::vector<TermResult>& terms) const;
   KanjiResult query_kanji(const std::string& kanji) const;
@@ -125,6 +128,7 @@ class DictionaryQuery {
     Dictionary(Dictionary&&) noexcept;
     Dictionary& operator=(Dictionary&&) noexcept;
 
+    std::string path;
     std::string name;
     std::string styles;
     std::unique_ptr<DictionaryData> data;
@@ -132,6 +136,7 @@ class DictionaryQuery {
   enum DictionaryType : uint8_t { TERM, FREQ, PITCH, KANJI };
 
   void add_dict(const std::string& path, DictionaryType);
+  void add_dict_(const std::string& path, DictionaryType);
 
   static std::string decompress_glossary(const void* data, size_t size, const ZSTD_DDict_s* dict);
   std::vector<Dictionary> term_dicts_;
