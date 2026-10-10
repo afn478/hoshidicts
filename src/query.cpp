@@ -129,7 +129,13 @@ void DictionaryQuery::add_dict(const std::string& path, DictionaryType type) {
   if (version >= 4) {
     std::ifstream f(path + "/dict.zstd", std::ios::binary);
     const std::string blob(std::istreambuf_iterator<char>(f), {});
+    if (!f || ZSTD_getDictID_fromDict(blob.data(), blob.size()) == 0) {
+      return;
+    }
     dict.data->zstd_dict = ZSTD_createDDict(blob.data(), blob.size());
+    if (!dict.data->zstd_dict) {
+      return;
+    }
   }
 
   switch (type) {

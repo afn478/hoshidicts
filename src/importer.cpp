@@ -199,6 +199,9 @@ std::vector<char> train_zstd_dict(const Zip& zip, const Files& files, bool low_r
   if (sizes.size() < 8) {
     return {};
   }
+  if (samples.size() < 1024) {
+    return {};
+  }
 
   ZDICT_fastCover_params_t params = {};
   params.d = 8;
@@ -610,6 +613,10 @@ ImportResult dictionary_importer::import(const std::string& zip_path, const std:
     std::filesystem::path dict_path = std::filesystem::path(output_dir) / result.title;
     std::string path = dict_path.string();
     std::filesystem::create_directories(dict_path);
+    // Replacement imports must not retain the previous storage format.
+    for (const auto* name : {".hoshidicts_1", ".hoshidicts_2", ".hoshidicts_3", ".hoshidicts_4", "dict.zstd"}) {
+      std::filesystem::remove(dict_path / name);
+    }
 
     if (glz::write_file_json(index, path + "/index.json", std::string{})) {
       throw std::runtime_error("failed to write index.json");
@@ -633,6 +640,9 @@ ImportResult dictionary_importer::import(const std::string& zip_path, const std:
     std::unique_ptr<ZSTD_CDict, decltype(&ZSTD_freeCDict)> cdict(nullptr, ZSTD_freeCDict);
     if (!zstd_dict.empty()) {
       cdict.reset(ZSTD_createCDict(zstd_dict.data(), zstd_dict.size(), 0));
+      if (!cdict) {
+        throw std::runtime_error("failed to create compression dictionary");
+      }
 
       std::ofstream dict_file(dict_path / "dict.zstd", std::ios::binary);
       setup_stream_exceptions(dict_file);
